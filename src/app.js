@@ -27,7 +27,7 @@ class app {
     this.app.use((error, req, res, next) => {
       res.status(error.status || 500).json({
         error: {
-          error: 'Something went wrong...',
+          error: error.message
         }
       });
     });
