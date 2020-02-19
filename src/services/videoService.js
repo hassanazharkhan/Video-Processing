@@ -1,22 +1,19 @@
-import { transcribe as transcribeMiddleware } from '../middleware/transcribe';
-// import { upload as uploadMiddleware } from '../middleware/uploadS3';
-import { upload as uploadMiddleware } from '../middleware/uploadLocal';
-import { publishToQueue as processQueue } from '../services/msmqService';
+import transcribeService from './transcribeService';
+import uploadServicetoS3 from './uploadServicetoS3';
+import simpleQueueService from './simpleQueueService';
 
 class videoService {
   uploadFinalize = async (req, res, next) => {
     try {
+      
+      const transcribeResponse = await transcribeService.transcribe(req);
+      const payload = { key: req.file.originalname, path: req.file.path, date: (new Date()).toISOString() };
+      const queueResponse = await simpleQueueService.publishToQueue(payload);
 
-      const response = 'await transcribeMiddleware(req);';
-
-      let queueName = 'user-messages';
-      let payload = { key: req.file.originalname, path: req.file.path };
-
-      await processQueue(queueName, payload);
       return res.status(201).json({
         Message: 'File Uploaded Successfully',
         Path: req.file.path,
-        response
+        queueResponse
       });
     } catch (err) {
       return res.status(500).json({ Message: err.message });
@@ -24,7 +21,7 @@ class videoService {
   };
 
   uploadFile = (req, res, next) => {
-    const upload = uploadMiddleware.single('video');
+    const upload = uploadServicetoS3.single('video');
     upload(req, res, function (err) {
       if (err) {
         return res.status(500).json({ Message: err.stack });
