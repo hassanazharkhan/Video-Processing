@@ -44,7 +44,7 @@ class uploadServicetoS3 {
     storage: multerS3Config,
     fileFilter: fileFilter,
     limits: {
-      fileSize: 1024 * 1024 * 20 // we are allowing only 20 MB files
+      fileSize: 1024 * 1024 * 500 // we are allowing only 500 MB files
     }
   })
 }

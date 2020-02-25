@@ -5,14 +5,14 @@ import simpleQueueService from './simpleQueueService';
 class videoService {
   uploadFinalize = async (req, res, next) => {
     try {
-      const transcribeResponse = await transcribeService.transcribe(req);
-      const payload = { key: req.file.originalname, path: req.file.location, date: (new Date()).toISOString() };
-      const queueResponse = await simpleQueueService.publishToQueue(payload);
+      //const transcribeResponse = await transcribeService.transcribe(req);
+      //const payload = { key: req.file.originalname, path: req.file.location, date: (new Date()).toISOString() };
+      //const queueResponse = await simpleQueueService.publishToQueue(payload);
       return res.status(201).json({
         Message: 'File Uploaded Successfully',
-        Path: req.file.location,
-        transcribeResponse,
-        queueResponse
+       // Path: req.file.location,
+      //transcribeResponse,
+      //queueResponse
       });
     } catch (err) {
       return res.status(500).json({ Message: err.message });
@@ -20,11 +20,14 @@ class videoService {
   };
 
   uploadFile = (req, res, next) => {
-    const upload = uploadServicetoS3.single('video');
+    console.log('Info', 'Files Uploading Started')
+    const upload = uploadServicetoS3.array('video');
     upload(req, res, function (err) {
       if (err) {
-        return res.status(500).json({ Message: err.stack });
+        console.log('Error', err.message)
+        return res.status(500).json({ Message: err.message });
       }
+      console.log('Info', 'Files Uploading Completed')
       next();
     });
   };
