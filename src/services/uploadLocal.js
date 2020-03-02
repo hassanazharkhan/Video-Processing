@@ -19,12 +19,17 @@ const filefilter = (req, file, callback) => {
   }
 }
 
-export const upload = multer({
-  storage: storage,
-  limits: {
-    fileSize: 1024 * 1024 * 20
-  },
-  fileFilter: filefilter
-})
+class uploadLocal {
+  upload = multer({
+    storage: storage,
+    limits: {
+      fileSize: 1024 * 1024 * 20
+    },
+    fileFilter: filefilter
+  })
+}
+
+export default new uploadLocal().upload
+
 
  

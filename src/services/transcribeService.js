@@ -1,6 +1,5 @@
 import AWS from 'aws-sdk';
-import path from 'path';
-import guid from 'uuid/v1';
+import { extname as getFileExtention } from 'path';
 
 class transcribeService {
   constructor() {
@@ -12,32 +11,41 @@ class transcribeService {
     });
   }
 
-  transcribe = async req => {
-    const params = {
-      LanguageCode: process.env.LANGUAGE_CODE,
-      Media: {
-        MediaFileUri: req.file.location
-      },
-      MediaFormat: path.extname(req.file.originalname).replace('.', ''),
-      TranscriptionJobName: req.key,
-      OutputBucketName: process.env.AWS_TRANSCRIPTION_BUCKET
-    };
-  
-     const transcribeServiceResult = this.transcribeService.startTranscriptionJob(params, function(err, job) {
+  startTranscriptionJob = (params) => {
+    return new Promise((resolve, reject) => {
+      this.transcribeService.startTranscriptionJob(params, function (err, response) {
         if (err) {
           console.log(err, err.stack);
-          return err.stack;
+          reject(err.stack);
+        } else {
+          resolve(response);
         }
-  
-        return job;
-      }).promise();
-  
-      return transcribeServiceResult;
+      })
+    });
+  }
+
+  transcribe = async (files) => {
+    const transcribeServiceResults = new Array();
+    for (const file of files) {
+      let params = {
+        LanguageCode: process.env.LANGUAGE_CODE,
+        Media: {
+          MediaFileUri: file.location
+        },
+        MediaFormat: getFileExtention(file.originalname).replace('.', ''),
+        TranscriptionJobName: file.fileKey,
+        OutputBucketName: process.env.AWS_TRANSCRIPTION_BUCKET
+      };
+
+      let transcribeServiceResult = await startTranscriptionJob(params);
+      transcribeServiceResults.push(transcribeServiceResult);
+    }
+
+    return transcribeServiceResults;
   };
 
 }
- 
+
 export default new transcribeService()
 
 
- 

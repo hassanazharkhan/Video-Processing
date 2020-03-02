@@ -10,25 +10,34 @@ class simpleQueueService {
     });
   }
 
-  publishToQueue = async payload => {
-    const params = {
-      MessageBody: JSON.stringify(payload),
-      QueueUrl: process.env.AWS_SQS_URL
-    };
-
-    const simpleQueueServiceResult = this.simpleQueueService.sendMessage(params, (err, data) => {
-        if (err) {
-          console.log(err, err.stack);
-          return err.stack;
+  sendMessage = (params) => {
+    return new Promise((resolve, reject) => {
+      this.simpleQueueService.sendMessage(params, (error, response) => {
+        if (error) {
+          console.log("Error", error);
+          reject(error);
+        } else {
+          resolve(response);
         }
+      });
 
-        return data;
-      }).promise();
+    });
+  };
 
-    return simpleQueueServiceResult;
+  publishToQueue = async (messages) => {
+    const simpleQueueServiceResults = new Array();
+
+    for (const message of messages) {
+      const params = {
+        MessageBody: JSON.stringify(message),
+        QueueUrl: process.env.AWS_SQS_URL
+      };
+
+      let simpleQueueServiceResult = await this.sendMessage(params)
+      simpleQueueServiceResults.push(simpleQueueServiceResult);
+    }
+    return simpleQueueServiceResults
   };
 }
-
-
 
 export default new simpleQueueService()

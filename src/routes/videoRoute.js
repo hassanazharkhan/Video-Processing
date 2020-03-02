@@ -7,7 +7,7 @@ class videoRouter {
         this.routes()
     }
     routes() {
-      this.router.post('/upload-video', videoService.uploadFile , videoService.uploadFinalize);
+      this.router.post('/upload-video', videoService.uploadFiles , videoService.uploadFinalize);
     }
 }
 

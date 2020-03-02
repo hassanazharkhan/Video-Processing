@@ -17,7 +17,7 @@ exports.handler = async(event) => {
   const target = s3.getSignedUrl('getObject', {
     Bucket: bucket,
     Key: srcKey,
-    Expires: 259200
+    Expires: 900
   });
 
   let fileType = srcKey.match(/\.\w+$/);
@@ -32,7 +32,38 @@ exports.handler = async(event) => {
     throw new Error(`filetype: ${fileType} is not an allowed type`);
   }
 
-  function createImage(seek) {
+  async function transcodeVideo() {
+    return new Promise((resolve, reject) => {
+      const ffmpeg = spawn(ffmpegPath, [
+          '-y', 
+          '-i', 
+          target,
+           '-i', 
+          thumbnail,
+          '-filter_complex', 'overlay=x=(main_w-overlay_w)/2:y=(main_h-overlay_h)/2',
+          '-s', '640x480', 
+          '-codec:a', 'aac', 
+          '-b:a', '44.1k', 
+          '-r', '15', 
+          '-b:v', '1000k', 
+          '-c:v','h264', 
+          '-f', 'mp4', 
+          output
+      ]);
+
+      ffmpeg.on('close', function(code) {
+          console.log(code);
+        resolve();
+      });
+
+      ffmpeg.on('error', function(err) {
+        console.log(err);
+        reject();
+      });
+    });
+  }
+
+  async function createThumbnail(seek) {
     return new Promise((resolve, reject) => {
       let tmpFile = createWriteStream(`/tmp/screenshot.jpg`);
       const ffmpeg = spawn(ffmpegPath, [
@@ -67,7 +98,7 @@ exports.handler = async(event) => {
     });
   }
 
-  function uploadToS3(x) {
+  async function uploadToS3(x) {
     return new Promise((resolve, reject) => {
       let tmpFile = createReadStream(`/tmp/screenshot.jpg`);
       let dstKey = srcKey
@@ -82,8 +113,6 @@ exports.handler = async(event) => {
         Body: tmpFile,
         ContentType: `image/jpg`
       };
-
-      console.log('tmpFile', tmpFile);
 
       s3.upload(params, function (err, data) {
         if (err) {
@@ -109,12 +138,8 @@ exports.handler = async(event) => {
   const duration = Math.ceil(ffprobe.stdout.toString());
   console.log('duration',duration);
 
-  await createImage(duration * 0.1);
+  await createImage(duration * 0);
   await uploadToS3(1);
-  await createImage(duration * 0.5);
-  await uploadToS3(2);
-  await createImage(duration * 0.75);
-  await uploadToS3(3);
 
   return console.log(`processed ${bucket}/${srcKey} successfully`);
 
